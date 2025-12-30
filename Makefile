@@ -25,17 +25,7 @@ attach:
 logs: 
 	@@docker compose logs --follow --tail 100 $(service)
 
-.PHONY: exec-backend
-exec-backend:
-	docker exec -ti cohere-toolkit-backend-1 bash 
 
-.PHONY: exec-db
-exec-db:
-	docker exec -ti cohere-toolkit-db-1 bash
-
-.PHONY: exec-terrarium
-exec-terrarium:
-	docker exec -ti -u root cohere-toolkit-terrarium-1 /bin/sh
 
 # Testing & Linting
 .PHONY: run-unit-tests
