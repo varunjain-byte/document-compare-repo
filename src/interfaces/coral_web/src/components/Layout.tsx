@@ -46,7 +46,7 @@ export const Layout: React.FC<LayoutProps> = ({ leftDrawerElement, mainElement }
 
   return (
     <>
-      <div className="flex h-screen w-full flex-1 flex-col gap-3 bg-mushroom-900 p-3">
+      <div className="flex h-screen w-full flex-1 flex-col gap-3 bg-secondary-100 p-3 text-volcanic-900">
         <NavigationBar>
           <span className="flex items-center gap-x-2">
             <EditEnvVariablesButton className="py-0" />
@@ -85,7 +85,7 @@ export const Layout: React.FC<LayoutProps> = ({ leftDrawerElement, mainElement }
               'lg:transition-[min-width,max-width,margin,opacity,border-width] lg:duration-300',
               'w-full',
               'flex flex-grow flex-col rounded-lg border',
-              'border-marble-950 bg-marble-1000'
+              'border-marble-400 bg-white'
             )}
           >
             {leftDrawerElement}
@@ -107,7 +107,7 @@ export const Layout: React.FC<LayoutProps> = ({ leftDrawerElement, mainElement }
               className={cn(
                 'relative flex h-full min-w-0 flex-grow flex-col',
                 'rounded-lg border',
-                'border-marble-950 bg-marble-1000',
+                'border-marble-400 bg-white',
                 'overflow-hidden'
               )}
             >
