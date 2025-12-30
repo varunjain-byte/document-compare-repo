@@ -60,6 +60,17 @@ Follow these steps to get running on a new machine.
 -   `src/backend`: Python FastAPI backend.
 -   `src/community`: Community tools and integrations.
 
+## ☁️ Deployment
+
+You can deploy this application to Render with a single click.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+1.  Click the button above.
+2.  Provide your **Cohere API Key** when prompted.
+3.  Render will automatically build and deploy the Database, Backend, and Frontend.
+
+
 ## Development Commands
 
 -   `make up`: Start all services (backend, frontend, db, redis).

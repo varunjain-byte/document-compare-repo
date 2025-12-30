@@ -1,0 +1,53 @@
+services:
+  # Python Backend
+  - type: web
+    name: toolkit-backend
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: ./src/backend/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: toolkit-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: toolkit-redis
+          property: connectionString
+      - key: COHERE_API_KEY
+        sync: false
+        # User will need to provide this value in Render dashboard
+    plan: free
+
+  # Next.js Frontend
+  - type: web
+    name: toolkit-frontend
+    runtime: docker
+    dockerContext: ./src/interfaces/coral_web
+    dockerfilePath: ./src/interfaces/coral_web/Dockerfile
+    envVars:
+      - key: NEXT_PUBLIC_API_HOSTNAME
+        fromService:
+          type: web
+          name: toolkit-backend
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: API_HOSTNAME
+        fromService:
+          type: web
+          name: toolkit-backend
+          envVarKey: RENDER_EXTERNAL_URL
+    plan: free
+
+databases:
+  - name: toolkit-db
+    databaseName: toolkit
+    user: toolkit_user
+    plan: free
+
+services:
+  # Redis
+  - type: redis
+    name: toolkit-redis
+    ipAllowList: [] # Access only from internal services
+    plan: free
