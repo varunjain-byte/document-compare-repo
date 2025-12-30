@@ -8,7 +8,7 @@ const quickLinks = [
   { title: 'Upload', description: 'Create a comparison set and upload the PDFs.', href: '/document-compare/upload', accent: 'bg-blue-500' },
   { title: 'Parse PDFs', description: 'Upload and segment documents into zones, tables, and figures.', href: '/document-compare/parse', accent: 'bg-blue-400' },
   { title: 'Document validator', description: 'Validate structure, view normalized outline, and preview assets.', href: '/document-compare/structure', accent: 'bg-blue-300' },
-  { title: 'Compare', description: 'Align tables, images, and text across two or more PDFs.', href: '/document-compare/compare', accent: 'bg-blue-200' },
+  { title: 'Delta Compare', description: 'Align tables, images, and text across two or more PDFs.', href: '/document-compare/compare', accent: 'bg-blue-200' },
 ];
 
 const metrics = [
