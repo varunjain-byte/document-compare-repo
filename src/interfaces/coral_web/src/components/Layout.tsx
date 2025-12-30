@@ -5,6 +5,7 @@ import React, { PropsWithChildren, useContext, useEffect, useState } from 'react
 
 import { AgentsSidePanel } from '@/components/Agents/AgentsSidePanel';
 import { DeploymentsDropdown } from '@/components/DeploymentsDropdown';
+import { ConfigurationDrawer } from '@/components/Conversation/ConfigurationDrawer';
 import { EditEnvVariablesButton } from '@/components/EditEnvVariablesButton';
 import { MobileHeader } from '@/components/MobileHeader';
 import { NavigationUserMenu } from '@/components/NavigationUserMenu';
@@ -48,7 +49,6 @@ export const Layout: React.FC<LayoutProps> = ({ leftDrawerElement, mainElement }
       <div className="flex h-screen w-full flex-1 flex-col gap-3 bg-mushroom-900 p-3">
         <NavigationBar>
           <span className="flex items-center gap-x-2">
-            <DeploymentsDropdown />
             <EditEnvVariablesButton className="py-0" />
             {userMenu}
           </span>
