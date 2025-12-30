@@ -1,20 +1,12 @@
 'use client';
 
 import { Transition } from '@headlessui/react';
-import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
+import React, { PropsWithChildren } from 'react';
 
 import { AgentsSidePanel } from '@/components/Agents/AgentsSidePanel';
-import { DeploymentsDropdown } from '@/components/DeploymentsDropdown';
-import { ConfigurationDrawer } from '@/components/Conversation/ConfigurationDrawer';
-import { EditEnvVariablesButton } from '@/components/EditEnvVariablesButton';
 import { MobileHeader } from '@/components/MobileHeader';
-import { NavigationUserMenu } from '@/components/NavigationUserMenu';
 import { SettingsDrawer } from '@/components/Settings/SettingsDrawer';
-import { Banner } from '@/components/Shared';
-import { NavigationBar } from '@/components/Shared/NavigationBar/NavigationBar';
-import { BannerContext } from '@/context/BannerContext';
 import { useIsDesktop } from '@/hooks/breakpoint';
-import { useSession } from '@/hooks/session';
 import { useSettingsStore } from '@/stores';
 import { cn } from '@/utils/cn';
 
@@ -29,32 +21,14 @@ type LayoutProps = {
  * On small devices (e.g. mobile), the left drawer and main section are stacked vertically.
  */
 export const Layout: React.FC<LayoutProps> = ({ leftDrawerElement, mainElement }) => {
-  const { message: bannerMessage } = useContext(BannerContext);
   const {
     settings: { isConvListPanelOpen, isMobileConvListPanelOpen },
   } = useSettingsStore();
   const isDesktop = useIsDesktop();
-  const { session } = useSession();
-
-  const [userMenu, setUserMenu] = useState<React.ReactNode>(null);
-
-  useEffect(() => {
-    if (session && session.email) {
-      setUserMenu(<NavigationUserMenu userEmail={session.email} />);
-    }
-  }, [session]);
 
   return (
     <>
-      <div className="flex h-screen w-full flex-1 flex-col gap-3 bg-secondary-100 p-3 text-volcanic-900">
-        <NavigationBar>
-          <span className="flex items-center gap-x-2">
-            <EditEnvVariablesButton className="py-0" />
-            {userMenu}
-          </span>
-        </NavigationBar>
-        {bannerMessage && <Banner size="sm">{bannerMessage}</Banner>}
-
+      <div className="flex h-screen w-full flex-1 flex-col bg-secondary-100 p-3 text-volcanic-900">
         <div className={cn('relative flex h-full flex-grow flex-nowrap overflow-hidden')}>
           <Transition
             as="div"

@@ -11,16 +11,11 @@ class ServerError extends Error {
 }
 
 const readVariable = (key) => {
-  try {
-    if (typeof window === 'undefined'){
-      return process.env[key];
-    }
-    return window.__ENV[key];
-  } catch (err) {
-    throw new ServerError(
-      `${key} not configured, or the backend server is not running correctly.`
-    )
+  // Prefer runtime-injected env (next-runtime-env), fall back to process.env, otherwise undefined.
+  if (typeof window === 'undefined') {
+    return process.env[key];
   }
+  return (window?.__ENV && window.__ENV[key]) ?? process.env[key];
 };
 
 
