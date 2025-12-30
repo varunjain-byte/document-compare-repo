@@ -39,15 +39,14 @@ services:
           envVarKey: RENDER_EXTERNAL_URL
     plan: free
 
-databases:
-  - name: toolkit-db
-    databaseName: toolkit
-    user: toolkit_user
-    plan: free
-
-services:
   # Redis
   - type: redis
     name: toolkit-redis
     ipAllowList: [] # Access only from internal services
+    plan: free
+
+databases:
+  - name: toolkit-db
+    databaseName: toolkit
+    user: toolkit_user
     plan: free
