@@ -3,7 +3,6 @@ import { capitalize } from 'lodash';
 import React, { Children, PropsWithChildren, useContext } from 'react';
 
 import { ConfigurationDrawer } from '@/components/Conversation/ConfigurationDrawer';
-import { DeploymentsDropdown } from '@/components/DeploymentsDropdown';
 import { EditEnvVariablesButton } from '@/components/EditEnvVariablesButton';
 import { Banner } from '@/components/Shared';
 import { NavigationBar } from '@/components/Shared/NavigationBar/NavigationBar';
@@ -62,7 +61,6 @@ export const Layout: React.FC<Props> = ({ title = 'Coral', children }) => {
       <div className="flex h-screen w-full flex-1 flex-col gap-3 bg-secondary-100 p-3">
         <NavigationBar>
           <span className="flex items-center gap-x-2">
-            <DeploymentsDropdown />
             <EditEnvVariablesButton className="py-0" />
           </span>
         </NavigationBar>
