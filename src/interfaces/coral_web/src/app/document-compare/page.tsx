@@ -97,7 +97,7 @@ export default function DocumentComparePage() {
           </div>
         </header>
 
-        <section className="grid gap-5 lg:grid-cols-3">
+        <section className="grid gap-5 lg:grid-cols-3 text-volcanic-900">
           {quickLinks.map((item) => (
             <Link key={item.title} href={item.href} className="group rounded-2xl border border-marble-400 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-blue-300">
               <div className="flex items-center justify-between">

@@ -25,12 +25,12 @@ export default function DocumentUploadPage() {
       <Link href="/document-compare" className="flex items-center">
         <img src="/images/zf-logo.png" alt="ZF Logo" className="h-10 w-auto" />
       </Link>
-      <div className="space-y-2">
+      <div className="space-y-2 text-volcanic-900">
         <p className="text-label uppercase tracking-[0.3em] text-blue-700">Upload</p>
         <h2 className="text-h5 font-variable text-volcanic-900">Comparison Set</h2>
         <p className="text-p-sm text-volcanic-600">Add PDFs to a named set before parsing and comparing.</p>
       </div>
-      <div className="rounded-2xl border border-marble-400 bg-white p-4">
+      <div className="rounded-2xl border border-marble-500 bg-white p-4">
         <p className="text-label text-volcanic-600">Navigation</p>
         <div className="mt-3 flex flex-col gap-2">
           {navLinks.map((link) => {
@@ -41,8 +41,8 @@ export default function DocumentUploadPage() {
                 href={link.href}
                 className={`rounded-lg border px-3 py-2 text-p-sm ${
                   isActive
-                    ? 'border-blue-200 bg-secondary-50 text-volcanic-800'
-                    : 'border-marble-300 bg-white text-blue-700'
+                    ? 'border-blue-400 bg-secondary-50 text-volcanic-900'
+                    : 'border-marble-500 bg-white text-blue-800'
                 }`}
               >
                 {link.label}

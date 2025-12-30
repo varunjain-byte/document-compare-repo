@@ -85,7 +85,7 @@ export const Layout: React.FC<LayoutProps> = ({ leftDrawerElement, mainElement }
               'lg:transition-[min-width,max-width,margin,opacity,border-width] lg:duration-300',
               'w-full',
               'flex flex-grow flex-col rounded-lg border',
-              'border-marble-400 bg-white'
+              'border-marble-500 bg-white'
             )}
           >
             {leftDrawerElement}
@@ -107,7 +107,7 @@ export const Layout: React.FC<LayoutProps> = ({ leftDrawerElement, mainElement }
               className={cn(
                 'relative flex h-full min-w-0 flex-grow flex-col',
                 'rounded-lg border',
-                'border-marble-400 bg-white',
+                'border-marble-500 bg-white',
                 'overflow-hidden'
               )}
             >
