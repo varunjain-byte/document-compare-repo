@@ -1,10 +1,10 @@
-from google.cloud.texttospeech import (
-    AudioConfig,
-    AudioEncoding,
-    SynthesisInput,
-    TextToSpeechClient,
-    VoiceSelectionParams,
-)
+# from google.cloud.texttospeech import (
+#     AudioConfig,
+#     AudioEncoding,
+#     SynthesisInput,
+#     TextToSpeechClient,
+#     VoiceSelectionParams,
+# )
 from googleapiclient.discovery import build
 
 from backend.config import Settings
@@ -12,30 +12,10 @@ from backend.config import Settings
 
 def synthesize(text: str) -> bytes:
     """
-    Synthesizes speech from the input text.
-
-    Args:
-        text (str): The input text to be synthesized into speech.
-
-    Returns:
-        bytes: The audio content generated from the input text in MP3 format.
-
-    Raises:
-        ValueError: If the Google Cloud API key from the settings is not valid.
+    Mocked synthesize function to avoid google-cloud-texttospeech dependency.
     """
-    client = TextToSpeechClient(client_options={
-        "api_key": _validate_google_cloud_api_key()
-    })
-
-    language = detect_language(text)
-
-    response = client.synthesize_speech(
-        input=SynthesisInput(text=text),
-        voice=VoiceSelectionParams(language_code=language),
-        audio_config=AudioConfig(audio_encoding=AudioEncoding.MP3)
-    )
-
-    return response.audio_content
+    logger.warning(event="[Synthesizer] Synthesize called but google-cloud-texttospeech is not installed.")
+    return b""
 
 
 def detect_language(text: str) -> str:

@@ -42,9 +42,19 @@ Follow these steps to get running on a new machine.
 
 2.  **Run the First-Run Setup**
     This single command installs dependencies, sets up the environment, migrates the database, and starts the servers.
+
+    **On Mac/Linux:**
     ```bash
     make first-run
     ```
+
+    **On Windows:**
+    Use **Git Bash** or **PowerShell** and run:
+    ```bash
+    make first-run
+    ```
+    > [!TIP]
+    > If `make` is not available on Windows, you can install it via [Chocolatey](https://chocolatey.org/) (`choco install make`) or use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
 
 3.  **Configure API Keys**
     -   During setup, you may be prompted for keys.

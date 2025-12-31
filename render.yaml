@@ -15,9 +15,6 @@ services:
           type: redis
           name: toolkit-redis
           property: connectionString
-      - key: COHERE_API_KEY
-        sync: false
-        # User will need to provide this value in Render dashboard
     plan: free
 
   # Next.js Frontend
