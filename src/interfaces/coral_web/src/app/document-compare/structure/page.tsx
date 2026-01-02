@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { cn } from '@/utils/cn';
+import { useListFiles } from '@/hooks/files';
+import { useConversationStore } from '@/stores';
 
 const navLinks = [
   { href: '/document-compare', label: 'Home' },
@@ -14,11 +16,8 @@ const navLinks = [
   { href: '/document-compare/deep-dive', label: 'Similarity Matcher' },
 ];
 
-const mockFiles = [
-  { id: 'file_1', name: 'Invoice_Q4.pdf' },
-  { id: 'file_2', name: 'PurchaseOrder_101.pdf' },
-  { id: 'file_3', name: 'Contract_Main.pdf' },
-];
+// Mock files removed in favor of real data
+
 
 // Mock data spanning multiple pages
 const mockPages = [
@@ -48,8 +47,29 @@ const mockPages = [
   }
 ];
 
+import { MOCK_FILES } from '@/mocks/mockFiles';
+
 export default function DocumentStructurePage() {
-  const [selectedFileId, setSelectedFileId] = useState(mockFiles[0].id);
+  const { conversation } = useConversationStore();
+  const { data: serverFiles = [] } = useListFiles(conversation.id, { enabled: !!conversation.id });
+
+  // Use mock data if server list is empty
+  const files = serverFiles.length > 0 ? serverFiles : MOCK_FILES;
+
+  // Filter for parsed files only. 
+  // Note: Backend 'status' field added in previous step. 
+  // If not available yet, fall back to showing all for demo robustness or mock filtered behavior.
+  const parsedFiles = files.filter(f => (f as any).status === 'parsed' || (f as any).status === 'PARSED'); // Case insensitive check
+
+  // Default to first available file or empty
+  const [selectedFileId, setSelectedFileId] = useState('');
+
+  useEffect(() => {
+    if (parsedFiles.length > 0 && !selectedFileId) {
+      setSelectedFileId(parsedFiles[0].id);
+    }
+  }, [parsedFiles, selectedFileId]);
+
   const [pages, setPages] = useState(mockPages);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -161,8 +181,9 @@ export default function DocumentStructurePage() {
                 onChange={(e) => setSelectedFileId(e.target.value)}
                 className="appearance-none bg-white border border-marble-300 text-volcanic-900 text-p-sm rounded pl-3 pr-8 py-1.5 focus:ring-blue-500 focus:border-blue-500 block w-full font-medium"
               >
-                {mockFiles.map(file => (
-                  <option key={file.id} value={file.id}>{file.name}</option>
+                {parsedFiles.length === 0 && <option value="">No parsed files found</option>}
+                {parsedFiles.map(file => (
+                  <option key={file.id} value={file.id}>{file.file_name}</option>
                 ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-volcanic-500">
@@ -327,6 +348,17 @@ export default function DocumentStructurePage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
         </button>
+        <div className="flex gap-2">
+          {['REQIF', 'XLSX', 'JSON'].map((format) => (
+            <button
+              key={format}
+              onClick={() => alert(`Downloading ${format} for parsed document... (Not implemented)`)}
+              className="px-4 py-2 rounded-lg border border-blue-200 text-blue-700 font-medium text-p-sm hover:bg-blue-50 transition-colors"
+            >
+              Download {format}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

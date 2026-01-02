@@ -49,7 +49,10 @@ Follow these steps to get running on a new machine.
     ```
 
     **On Windows:**
-    Use **Git Bash** or **PowerShell** and run:
+    > [!IMPORTANT]
+    > Please read [DEPLOYMENT_WINDOWS.md](DEPLOYMENT_WINDOWS.md) for detailed WSL2 setup instructions.
+    
+    Use **Git Bash** or **PowerShell** within WSL and run:
     ```bash
     make first-run
     ```

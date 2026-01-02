@@ -7,7 +7,7 @@ import { cn } from '@/utils/cn';
 type NavLink = { href: string; label: string };
 
 const navLinks: NavLink[] = [
-  { href: '/document-compare', label: 'Portal' },
+  { href: '/document-compare', label: 'Home' },
   { href: '/document-compare/upload', label: 'Upload' },
   { href: '/document-compare/parse', label: 'Parse' },
   { href: '/document-compare/structure', label: 'Structure' },

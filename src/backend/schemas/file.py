@@ -35,6 +35,11 @@ class FileBase(ABC, BaseModel):
         description="Size of the file in bytes",
         ge=0
     )
+    status: str = Field(
+        "UPLOADED",
+        title="File Status",
+        description="Status of the file (e.g., UPLOADED, PARSED)",
+    )
 
 
 

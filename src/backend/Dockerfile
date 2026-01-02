@@ -31,11 +31,12 @@ COPY pyproject.toml poetry.lock ./
 RUN pip install --no-cache-dir poetry==1.8.4
 
 # Conditional installation of dependencies
-RUN if [ "$INSTALL_COMMUNITY_DEPS" = "true" ]; then \
-      poetry install --with dev,community; \
-    else \
-      poetry install --with dev; \
-    fi
+RUN poetry lock --no-update && \
+  if [ "$INSTALL_COMMUNITY_DEPS" = "true" ]; then \
+  poetry install --with dev,community; \
+  else \
+  poetry install --with dev; \
+  fi
 
 COPY src/backend/ src/backend/
 COPY src/community src/community/

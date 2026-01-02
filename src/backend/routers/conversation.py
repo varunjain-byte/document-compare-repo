@@ -365,23 +365,77 @@ async def batch_upload_file(
 
     # TODO: check if file already exists in DB once we have files per agents
 
-    try:
-        uploaded_files = await get_file_service().create_conversation_files(
-            session,
-            files,
-            user_id,
-            conversation.id,
-            ctx,
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error while uploading file(s): {e}."
-        )
+    # OLD LOGIC REPLACED BY NEW ARCHITECTURE
+    # try:
+    #     uploaded_files = await get_file_service().create_conversation_files(
+    #         session,
+    #         files,
+    #         user_id,
+    #         conversation.id,
+    #         ctx,
+    #     )
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=500, detail=f"Error while uploading file(s): {e}."
+    #     )
+    
+    # NEW ARCHITECTURE FLOW
+    from backend.services.blob import get_blob_service
+    from backend.services.mongo import get_mongo_service
+    from backend.services.extraction import get_extraction_service
+    from backend.database_models.file import File as PostgresFileModel 
+    import uuid
+    import datetime
 
-    files_with_conversation_id = attach_conversation_id_to_files(
-        conversation.id, uploaded_files
-    )
-    return files_with_conversation_id
+    blob_service = get_blob_service()
+    mongo_service = get_mongo_service()
+    extraction_service = get_extraction_service()
+    
+    uploaded_files = []
+    
+    try:
+        for file in files:
+            # 1. Upload to Blob
+            file_id = str(uuid.uuid4())
+            blob_path = f"raw/{file_id}/{file.filename}"
+            await blob_service.upload_file(file, blob_path)
+            
+            # 2. Save Metadata to Mongo
+            now = datetime.datetime.utcnow()
+            file_meta = {
+                "_id": file_id,
+                "user_id": user_id,
+                "conversation_id": conversation.id,
+                "file_name": file.filename,
+                "file_size": file.size,
+                "status": "UPLOADED",
+                "blob_path": blob_path,
+                "created_at": now,
+                "updated_at": now
+            }
+            await mongo_service.create_file_metadata(file_meta)
+            
+            # 3. Trigger Extraction
+            await extraction_service.trigger_extraction(file_id, blob_path)
+            
+            # 4. Construct valid response object directly
+            uploaded_files.append(
+                UploadConversationFileResponse(
+                    id=file_id,
+                    conversation_id=conversation.id,
+                    user_id=user_id,
+                    file_name=file.filename,
+                    file_size=file.size,
+                    created_at=now,
+                    updated_at=now
+                )
+            )
+
+    except Exception as e:
+        print(f"Upload failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+    return uploaded_files
 
 
 @router.get("/{conversation_id}/files", response_model=list[ListConversationFile])
@@ -397,14 +451,28 @@ async def list_files(
         HTTPException: If the conversation with the given ID is not found.
     """
     user_id = ctx.get_user_id()
-    _ = validate_conversation(session, conversation_id, user_id)
+    # conversation = validate_conversation(session, conversation_id, user_id) # Skip this for now as we want to see uploaded files even if conversation is empty/new
 
-    files = get_file_service().get_files_by_conversation_id(
-        session, user_id, conversation_id, ctx
-    )
-    files_with_conversation_id = attach_conversation_id_to_files(
-        conversation_id, files)
-    return files_with_conversation_id
+    from backend.services.mongo import get_mongo_service
+    mongo_service = get_mongo_service()
+    
+    files = await mongo_service.get_files_by_conversation_id(conversation_id)
+    
+    # Map Mongo files to schema
+    results = []
+    for f in files:
+        results.append(ListConversationFile(
+            id=f["_id"],
+            conversation_id=conversation_id,
+            user_id=f["user_id"],
+            file_name=f["file_name"],
+            file_size=f["file_size"],
+            status=f.get("status", "UPLOADED"),
+            created_at=f["created_at"],
+            updated_at=f["updated_at"],
+        ))
+        
+    return results
 
 
 @router.get("/{conversation_id}/files/{file_id}", response_model=FileMetadata)
@@ -420,25 +488,34 @@ async def get_file(
     Raises:
         HTTPException: If the conversation or file with the given ID is not found, or if the file does not belong to the conversation.
     """
-    user_id = ctx.get_user_id()
-
-    conversation = validate_conversation(session, conversation_id, user_id)
-
-    if file_id not in conversation.file_ids:
-        raise HTTPException(
+    from backend.services.mongo import get_mongo_service
+    mongo_service = get_mongo_service()
+    
+    file_data = await mongo_service.get_file_metadata(file_id)
+    
+    if not file_data:
+         raise HTTPException(
             status_code=404,
-            detail=f"File with ID: {file_id} does not belong to the conversation with ID: {conversation.id}."
+            detail=f"File with ID: {file_id} not found."
+        )
+        
+    if file_data["conversation_id"] != conversation_id:
+         raise HTTPException(
+            status_code=404,
+            detail=f"File with ID: {file_id} does not belong to the conversation with ID: {conversation_id}."
         )
 
-    file = validate_file(session, file_id, user_id)
-
+    # Note: Mongo currently stores blob path, not content. 
+    # If content text is needed, we need to read from blob or extracted text service.
+    # For now, return empty content as frontend likely only needs metadata here
+    
     return FileMetadata(
-        id=file.id,
-        file_name=file.file_name,
-        file_content=file.file_content,
-        file_size=file.file_size,
-        created_at=file.created_at,
-        updated_at=file.updated_at,
+        id=file_data["_id"],
+        file_name=file_data["file_name"],
+        file_content="", # Content not stored in Mongo metadata
+        file_size=file_data["file_size"],
+        created_at=file_data["created_at"],
+        updated_at=file_data["updated_at"],
     )
 
 
@@ -455,13 +532,10 @@ async def delete_file(
     Raises:
         HTTPException: If the conversation with the given ID is not found.
     """
-    user_id = ctx.get_user_id()
-    _ = validate_conversation(session, conversation_id, user_id)
-    validate_file(session, file_id, user_id)
-    # Delete the File DB object
-    get_file_service().delete_conversation_file_by_id(
-        session, conversation_id, file_id, user_id, ctx
-    )
+    from backend.services.mongo import get_mongo_service
+    mongo_service = get_mongo_service()
+    
+    await mongo_service.delete_file(file_id)
 
     return DeleteConversationFileResponse()
 

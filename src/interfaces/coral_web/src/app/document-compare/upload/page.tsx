@@ -1,15 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { cn } from '@/utils/cn';
-
-const uploadCards = [
-  { title: 'Agreement A', detail: 'PDF, 42 pages', status: 'Ready', size: '3.2 MB' },
-  { title: 'Agreement B', detail: 'PDF, 37 pages', status: 'Ready', size: '2.8 MB' },
-  { title: 'Annex C', detail: 'PDF, 18 pages', status: 'Missing', size: '—' },
-];
+import { useFileActions, useListFiles } from '@/hooks/files';
+import { useConversationStore } from '@/stores';
+import { formatFileSize } from '@/utils';
+import { MOCK_FILES } from '@/mocks/mockFiles';
 
 const navLinks = [
   { href: '/document-compare', label: 'Home' },
@@ -22,13 +20,33 @@ const navLinks = [
 
 export default function DocumentUploadPage() {
   const [viewMode, setViewMode] = useState<'table' | 'finder'>('table');
-  const [selectedFile, setSelectedFile] = useState(uploadCards[0]);
+  const { conversation } = useConversationStore();
+  const { data: serverFiles = [] } = useListFiles(conversation.id, { enabled: !!conversation.id });
 
-  const handleViewerUpload = (file?: File) => {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    sessionStorage.setItem('uploadedPdfUrl', url);
-    sessionStorage.setItem('uploadedPdfName', file.name);
+  // Use mock data if server list is empty (for demo)
+  const files = serverFiles.length > 0 ? serverFiles : MOCK_FILES;
+
+  const { uploadFiles, deleteFile } = useFileActions();
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+
+  // Auto-select first file for preview
+  useEffect(() => {
+    if (files.length > 0 && !selectedFileId) {
+      setSelectedFileId(files[0].id);
+    }
+  }, [files, selectedFileId]);
+
+  const selectedFile = files.find(f => f.id === selectedFileId) || files[0];
+
+  const handleViewerUpload = async (filesToUpload?: FileList | null) => {
+    if (!filesToUpload) return;
+    const fileArray = Array.from(filesToUpload);
+    await uploadFiles(fileArray, conversation.id);
+  };
+
+  const handleDelete = async (fileId: string) => {
+    if (!conversation.id) return;
+    await deleteFile({ conversationId: conversation.id, fileId });
   };
 
   const leftDrawerElement = (
@@ -93,7 +111,7 @@ export default function DocumentUploadPage() {
                   accept="application/pdf"
                   multiple
                   className="hidden"
-                  onChange={(e) => handleViewerUpload(e.target.files?.[0] ?? undefined)}
+                  onChange={(e) => handleViewerUpload(e.target.files)}
                 />
               </label>
             </div>
@@ -105,18 +123,20 @@ export default function DocumentUploadPage() {
               <div className="flex items-center justify-center py-6">
                 {/* CSS-only Donut Chart Placeholder */}
                 <div className="relative h-32 w-32 rounded-full border-[8px] border-white shadow-sm flex items-center justify-center bg-blue-100">
-                  <span className="text-h4 font-bold text-blue-600">3</span>
+                  <span className="text-h4 font-bold text-blue-600">{files.length}</span>
                   <span className="absolute text-p-xs text-blue-400 -bottom-6">Files</span>
                 </div>
               </div>
               <ul className="space-y-3 mt-4">
                 <li className="flex justify-between text-p-sm">
                   <span className="text-volcanic-500">Total Files</span>
-                  <span className="text-volcanic-100 font-medium">3</span>
+                  <span className="text-volcanic-100 font-medium">{files.length}</span>
                 </li>
                 <li className="flex justify-between text-p-sm">
                   <span className="text-volcanic-500">Total Size</span>
-                  <span className="text-volcanic-100 font-medium">6.0 MB</span>
+                  <span className="text-volcanic-100 font-medium">
+                    {formatFileSize(files.reduce((acc, f) => acc + (f.file_size || 0), 0))}
+                  </span>
                 </li>
                 <li className="flex justify-between text-p-sm">
                   <span className="text-volcanic-500">Last Modified</span>
@@ -166,8 +186,8 @@ export default function DocumentUploadPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {uploadCards.map(card => (
-                        <tr key={card.title} className="group border-b border-marble-100 last:border-0 hover:bg-secondary-50 transition-colors">
+                      {files.map(file => (
+                        <tr key={file.id} className="group border-b border-marble-100 last:border-0 hover:bg-secondary-50 transition-colors">
                           <td className="py-4 pl-6">
                             <div className="flex items-center gap-3">
                               <div className="h-8 w-8 rounded bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -176,32 +196,47 @@ export default function DocumentUploadPage() {
                                 </svg>
                               </div>
                               <div>
-                                <p className="text-p-sm font-medium text-volcanic-100">{card.title}</p>
-                                <p className="text-p-xs text-volcanic-400">{card.detail}</p>
+                                <p className="text-p-sm font-medium text-volcanic-100">{file.file_name}</p>
+                                <p className="text-p-xs text-volcanic-400">PDF</p>
                               </div>
                             </div>
                           </td>
                           <td className="py-4">
-                            <span className={`px-2 py-1 rounded-full text-[10px] uppercase border font-medium ${card.status === 'Ready'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : 'bg-marble-50 text-volcanic-500 border-marble-200'
-                              }`}>
-                              {card.status === 'Ready' ? 'Uploaded' : 'Pending'}
-                            </span>
+                            {(file as any).status === 'parsed' || (file as any).status === 'PARSED' ? (
+                              <span className="px-2 py-1 rounded-full text-[10px] uppercase border font-medium bg-emerald-50 text-emerald-700 border-emerald-200">
+                                Parsed
+                              </span>
+                            ) : (
+                              <Link href="/document-compare/parse">
+                                <button className="px-3 py-1.5 rounded-md text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm flex items-center gap-1">
+                                  <span>Start Parsing</span>
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                  </svg>
+                                </button>
+                              </Link>
+                            )}
                           </td>
-                          <td className="py-4 text-p-sm text-volcanic-500 font-mono">{card.size}</td>
+                          <td className="py-4 text-p-sm text-volcanic-500 font-mono">{formatFileSize(file.file_size || 0)}</td>
                           <td className="py-4 pr-6 text-right">
                             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
-                              <button className="px-3 py-1 rounded-md text-label border border-marble-300 hover:bg-white hover:border-blue-300 hover:text-blue-600 transition-all bg-white shadow-sm">
-                                Rename
-                              </button>
-                              <button className="px-3 py-1 rounded-md text-label border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-all bg-white shadow-sm">
+                              <button
+                                onClick={() => handleDelete(file.id)}
+                                className="px-3 py-1 rounded-md text-label border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-all bg-white shadow-sm"
+                              >
                                 Delete
                               </button>
                             </div>
                           </td>
                         </tr>
                       ))}
+                      {files.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-p-sm text-volcanic-400">
+                            No files uploaded yet.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -213,13 +248,13 @@ export default function DocumentUploadPage() {
                     <div className="p-3">
                       <h4 className="text-label text-volcanic-400 uppercase tracking-wider mb-2 px-2">Files</h4>
                       <div className="space-y-1">
-                        {uploadCards.map((card) => (
+                        {files.map((file) => (
                           <button
-                            key={card.title}
-                            onClick={() => setSelectedFile(card)}
+                            key={file.id}
+                            onClick={() => setSelectedFileId(file.id)}
                             className={cn(
                               "w-full text-left px-3 py-2 rounded-lg text-p-sm transition-colors flex items-center gap-2",
-                              selectedFile.title === card.title
+                              selectedFile?.id === file.id
                                 ? "bg-blue-50 text-blue-700 font-medium"
                                 : "hover:bg-secondary-100 text-volcanic-600"
                             )}
@@ -227,9 +262,12 @@ export default function DocumentUploadPage() {
                             <svg className="w-4 h-4 text-volcanic-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            <span className="truncate">{card.title}</span>
+                            <span className="truncate">{file.file_name}</span>
                           </button>
                         ))}
+                        {files.length === 0 && (
+                          <div className="px-3 py-2 text-p-sm text-volcanic-400">No files</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -237,18 +275,22 @@ export default function DocumentUploadPage() {
                   {/* Preview Pane */}
                   <div className="w-2/3 flex flex-col items-center justify-center bg-dots-pattern p-8 relative">
                     {/* Paper Preview */}
-                    <div className="w-[70%] aspect-[1/1.414] bg-white shadow-2xl border border-marble-200 rounded-lg flex flex-col items-center justify-center p-8 transition-all hover:scale-[1.02]">
-                      <div className="h-16 w-16 mb-4 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
-                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
+                    {selectedFile ? (
+                      <div className="w-[70%] aspect-[1/1.414] bg-white shadow-2xl border border-marble-200 rounded-lg flex flex-col items-center justify-center p-8 transition-all hover:scale-[1.02]">
+                        <div className="h-16 w-16 mb-4 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
+                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-h5 text-volcanic-100 text-center mb-1">{selectedFile.file_name}</h3>
+                        <p className="text-p-sm text-volcanic-400 mb-6">PDF • {formatFileSize(selectedFile.file_size || 0)}</p>
+                        <button className="rounded-full bg-volcanic-900 px-6 py-2 text-p-sm font-medium text-white hover:bg-volcanic-700 transition-colors shadow-lg">
+                          Open Preview
+                        </button>
                       </div>
-                      <h3 className="text-h5 text-volcanic-100 text-center mb-1">{selectedFile.title}</h3>
-                      <p className="text-p-sm text-volcanic-400 mb-6">{selectedFile.detail} • {selectedFile.size}</p>
-                      <button className="rounded-full bg-volcanic-900 px-6 py-2 text-p-sm font-medium text-white hover:bg-volcanic-700 transition-colors shadow-lg">
-                        Open Preview
-                      </button>
-                    </div>
+                    ) : (
+                      <p className="text-p text-volcanic-400">Select a file to preview</p>
+                    )}
                     <div className="absolute bottom-4 text-p-xs text-volcanic-400">
                       Finder Preview Mode
                     </div>

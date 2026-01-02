@@ -3,7 +3,7 @@ services:
     image: postgres:14.11-alpine
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
+      test: [ "CMD-SHELL", "pg_isready" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,7 +32,7 @@ services:
     image: redis:7.2-alpine
     restart: always
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -43,6 +43,30 @@ services:
     command: redis-server --save 60 1 --loglevel warning --requirepass redis
     volumes:
       - ./data:/data
+
+  mongo:
+    image: mongo:4.4.6
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - proxynet
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    networks:
+      - proxynet
 
   backend:
     build:
@@ -73,7 +97,10 @@ services:
     depends_on:
       - db
       - redis
+      - mongo
+      - minio
     volumes:
+      - ./src/backend:/workspace/src/backend
       # Mount alembic folder to sync migrations
       - ./src/backend/alembic:/workspace/src/backend/alembic
       # Mount configurations
@@ -84,6 +111,11 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
       - REDIS_URL=redis://:redis@redis:6379/0
       - CORS_ALLOWED_ORIGINS=http://localhost:4000
+      - MONGO_URL=mongodb://mongo:27017
+      - BLOB_ENDPOINT_URL=http://minio:9000
+      - BLOB_ACCESS_KEY=minioadmin
+      - BLOB_SECRET_KEY=minioadmin
+      - BLOB_BUCKET_NAME=docu-compare-assets
     networks:
       - proxynet
 
@@ -104,7 +136,7 @@ services:
     develop:
       watch:
         - action: sync
-          path: ./src/interfaces/assistants_web
+          path: ./src/interfaces/coral_web
           target: /app
           ignore:
             - node_modules/
@@ -121,6 +153,10 @@ services:
 volumes:
   db:
     name: cohere_toolkit_db
+    driver: local
+  mongo_data:
+    driver: local
+  minio_data:
     driver: local
 
 networks:
